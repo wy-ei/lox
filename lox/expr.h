@@ -6,61 +6,76 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include "lox/callable.h"
 #include "lox/token.h"
 #include "lox/value.h"
 
+namespace stmt {
 
-namespace lox {
+class Function;
 
-struct Binary;
-struct Grouping;
-struct Literal;
-struct Unary;
-struct Variable;
-struct Assign;
-struct Logical;
-struct Break;
+}
 
-class ExprVisitor {
-public:
+namespace expr {
 
-    virtual lox::Value visitBinaryExpr(Binary *expr) = 0;
+class Binary;
+class Grouping;
+class Literal;
+class Unary;
+class Variable;
+class Assign;
+class Logical;
+class Break;
+class Call;
 
-    virtual lox::Value visitGroupingExpr(Grouping *expr) = 0;
+/*
+ * unary ->  ( "!" | "-") unary | call ;
+ * call  ->  primary ( "(" arguments? ")" )*
+ * arguments -> expression ( "," expression )*
+ */
 
-    virtual lox::Value visitLiteralExpr(Literal *expr) = 0;
+class Visitor {
+ public:
+    virtual Value visit_binary_expr(Binary *expr) = 0;
 
-    virtual lox::Value visitUnaryExpr(Unary *expr) = 0;
+    virtual Value visit_grouping_expr(Grouping *expr) = 0;
 
-    virtual lox::Value visitVariableExpr(Variable *expr) = 0;
+    virtual Value visit_literal_expr(Literal *expr) = 0;
 
-    virtual lox::Value visitAssignExpr(Assign *expr) = 0;
+    virtual Value visit_unary_expr(Unary *expr) = 0;
 
-    virtual lox::Value visitLogicalExpr(Logical *expr) = 0;
+    virtual Value visit_variable_expr(Variable *expr) = 0;
 
-    virtual lox::Value visitBreakExpr(Break *expr) = 0;
+    virtual Value visit_assign_expr(Assign *expr) = 0;
 
-    virtual ~ExprVisitor() = default;
+    virtual Value visit_logical_expr(Logical *expr) = 0;
+
+    virtual Value visit_break_expr(Break *expr) = 0;
+
+    virtual Value visit_call_expr(Call *expr) = 0;
+
+    virtual ~Visitor() = default;
 };
-
 
 class Expr {
-public:
+ public:
     using ptr = std::shared_ptr<Expr>;
 
-    virtual lox::Value accept(ExprVisitor *visitor) = 0;
+    virtual Value accept(Visitor *visitor) = 0;
 };
 
-struct Binary : public Expr {
+class Binary : public Expr {
+ public:
     Binary(Expr::ptr left, Token::ptr op, Expr::ptr right) {
         this->left = std::move(left);
         this->op = std::move(op);
         this->right = std::move(right);
     }
 
-    lox::Value accept(ExprVisitor *visitor) override {
-        return visitor->visitBinaryExpr(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_binary_expr(this);
     }
 
     Expr::ptr left;
@@ -68,84 +83,118 @@ struct Binary : public Expr {
     Expr::ptr right;
 };
 
-
-struct Grouping : public Expr {
+class Grouping : public Expr {
+ public:
     explicit Grouping(Expr::ptr expression) {
         this->expression = std::move(expression);
     }
 
-    lox::Value accept(ExprVisitor *visitor) override {
-        return visitor->visitGroupingExpr(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_grouping_expr(this);
     }
 
     Expr::ptr expression;
 };
 
-
-struct Literal : public Expr {
-    explicit Literal(lox::Value value) : value(std::move(value)) {}
-
-    lox::Value accept(ExprVisitor *visitor) override {
-        return visitor->visitLiteralExpr(this);
+class Literal : public Expr {
+ public:
+    explicit Literal(Value value) {
+        this->value = std::move(value);
     }
 
-    lox::Value value;
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_literal_expr(this);
+    }
+
+    Value value;
 };
 
-
-struct Unary : public Expr {
+class Unary : public Expr {
+ public:
     Unary(Token::ptr op, Expr::ptr right) {
         this->op = std::move(op);
         this->right = std::move(right);
     }
 
-    lox::Value accept(ExprVisitor *visitor) override {
-        return visitor->visitUnaryExpr(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_unary_expr(this);
     }
 
     Token::ptr op;
     Expr::ptr right;
 };
 
-struct Variable : public Expr {
-    explicit Variable(Token::ptr name): name(std::move(name)) {}
+class Variable : public Expr, public std::enable_shared_from_this<Variable> {
+ public:
+    explicit Variable(Token::ptr name) {
+        this->name = std::move(name);
+    }
 
-    lox::Value accept(lox::ExprVisitor *visitor) override {
-        return visitor->visitVariableExpr(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_variable_expr(this);
     }
 
     Token::ptr name;
 };
 
-struct Assign : public Expr {
-    explicit Assign(Token::ptr name, Expr::ptr value): name(std::move(name)), value(std::move(value)) {}
+class Assign : public Expr, public std::enable_shared_from_this<Assign> {
+ public:
+    Assign(Token::ptr name, Expr::ptr value) {
+        this->name = std::move(name);
+        this->value = std::move(value);
+    }
 
-    lox::Value accept(lox::ExprVisitor *visitor) override {
-        return visitor->visitAssignExpr(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_assign_expr(this);
     }
 
     Token::ptr name;
     Expr::ptr value;
 };
 
-struct Logical : public Expr {
-    explicit Logical(Expr::ptr left, Token::ptr op, Expr::ptr right)
-        : left(std::move(left)), op(std::move(op)), right(std::move(right)) {}
-
-    lox::Value accept(lox::ExprVisitor *visitor) override {
-        return visitor->visitLogicalExpr(this);
+class Logical : public Expr {
+ public:
+    Logical(Expr::ptr left, Token::ptr op, Expr::ptr right) {
+        this->left = std::move(left);
+        this->op = std::move(op);
+        this->right = std::move(right);
     }
 
-    Token::ptr op;
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_logical_expr(this);
+    }
+
     Expr::ptr left;
+    Token::ptr op;
     Expr::ptr right;
 };
 
-struct Break : public Expr {
-    lox::Value accept(lox::ExprVisitor *visitor) override {
-        return visitor->visitBreakExpr(this);
+class Break : public Expr {
+ public:
+    explicit Break(Token::ptr keyword) {
+        this->keyword = std::move(keyword);
     }
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_break_expr(this);
+    }
+    Token::ptr keyword;
 };
 
-} //namespace lox
+class Call : public Expr {
+ public:
+    Call(Expr::ptr callee, Token::ptr paren, std::vector<Expr::ptr> arguments) {
+        this->callee = std::move(callee);
+        this->paren = std::move(paren);
+        this->arguments = std::move(arguments);
+    }
 
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_call_expr(this);
+    }
+
+    Expr::ptr callee;
+    Token::ptr paren;
+    std::vector<Expr::ptr> arguments;
+};
+
+}  // namespace expr

@@ -4,22 +4,18 @@
 #pragma once
 
 #include <string>
-#include "lox/token.h"
-#include "lox/interpreter.h"
 
-namespace lox {
+#include "lox/interpreter.h"
+#include "lox/token.h"
 
 class Lox {
-public:
+ public:
     void execute_script(const std::string &filepath);
 
     void prompt();
 
-private:
+ private:
     void execute(const std::string &content);
 
     Interpreter interpreter_;
 };
-
-}
-

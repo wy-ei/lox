@@ -2,69 +2,60 @@
 // Created by wy on 22.5.23.
 //
 
-#ifndef LOX_INTERPRETER_H
-#define LOX_INTERPRETER_H
+#pragma once
 
-#include <vector>
 #include <stack>
+#include <unordered_map>
+#include <vector>
 
+#include "lox/environment.h"
 #include "lox/expr.h"
 #include "lox/statement.h"
-#include "lox/environment.h"
 
-namespace lox {
-
-class LoopContext {
-public:
-    bool break_loop {false};
-};
-
-class Interpreter : public ExprVisitor , public StmtVisitor {
-public:
+class Interpreter : public expr::Visitor, public stmt::Visitor {
+ public:
     Interpreter();
 
-    void interpret(const std::vector<Statement::ptr> &statements);
+    void interpret(const std::vector<stmt::Statement::ptr> &statements);
 
     void enable_repl_mode() {
         repl_mode_ = true;
     }
 
-    Value execute(Statement *statement);
-    void execute_block(const std::vector<Statement::ptr> &statements, Environment::ptr env);
+    Environment::ptr globals() {
+        return globals_environment_;
+    }
+
+    Value execute(stmt::Statement *statement);
+
+    void execute_block(const std::vector<stmt::Statement::ptr> &statements, Environment::ptr env);
 
     // expr
-    Value visitLiteralExpr(Literal *expr) override {
-        return expr->value;
-    }
-    Value visitGroupingExpr(Grouping *expr) override {
-        return evaluate(expr->expression.get());
-    }
-    Value visitUnaryExpr(Unary *expr) override;
-
-    Value visitBinaryExpr(Binary *expr) override;
-    Value visitVariableExpr(Variable *expr) override;
-    Value visitAssignExpr(lox::Assign *expr) override;
-    Value visitBreakExpr(Break *expr) override;
-
+    Value visit_literal_expr(expr::Literal *expr) override;
+    Value visit_grouping_expr(expr::Grouping *expr) override;
+    Value visit_unary_expr(expr::Unary *expr) override;
+    Value visit_binary_expr(expr::Binary *expr) override;
+    Value visit_variable_expr(expr::Variable *expr) override;
+    Value visit_logical_expr(expr::Logical *expr) override;
+    Value visit_assign_expr(expr::Assign *expr) override;
+    Value visit_break_expr(expr::Break *expr) override;
+    Value visit_call_expr(expr::Call *expr) override;
 
     // statements
-    Value visitExpressionStmt(lox::Expression *stmt) override;
-    Value visitPrintStmt(lox::Print *stmt) override;
-    Value visitVarStmt(lox::Var *stmt) override;
-    Value visitBlockStmt(lox::Block *stmt) override;
-    Value visitIfStmt(lox::IfStmt *stmt) override;
-    Value visitLogicalExpr(lox::Logical *expr) override;
-    Value visitWhileStmt(lox::WhileStmt *stmt) override;
-    Value visitForStmt(lox::ForStmt *stmt) override;
+    Value visit_expression_stmt(stmt::Expression *stmt) override;
+    Value visit_print_stmt(stmt::Print *stmt) override;
+    Value visit_var_stmt(stmt::Var *stmt) override;
+    Value visit_block_stmt(stmt::Block *stmt) override;
+    Value visit_if_stmt(stmt::If *stmt) override;
+    Value visit_while_stmt(stmt::While *stmt) override;
+    Value visit_for_stmt(stmt::For *stmt) override;
+    Value visit_function_stmt(stmt::Function *stmt) override;
+    Value visit_return_stmt(stmt::Return *stmt) override;
 
-private:
-    Value evaluate(Expr *expr);
+ private:
+    Value evaluate(expr::Expr *expr);
 
+    Environment::ptr globals_environment_;
     Environment::ptr environment_;
-    std::stack<LoopContext> loop_ctx_;
     bool repl_mode_{false};
 };
-
-}
-
-#endif //LOX_INTERPRETER_H

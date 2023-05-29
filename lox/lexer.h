@@ -9,17 +9,15 @@
 
 #include "lox/token.h"
 
-
 class Lexer {
-public:
+ public:
     explicit Lexer(std::string source);
 
     std::vector<Token::ptr> scan();
 
     Token next();
 
-private:
-
+ private:
     bool end();
 
     Token string();
@@ -30,8 +28,7 @@ private:
     void consume();
 
     std::string source_;
-    int start_ {0};
-    int current_ {0};
-    int line_ {1};
+    int start_{0};
+    int current_{0};
+    int line_{1};
 };
-

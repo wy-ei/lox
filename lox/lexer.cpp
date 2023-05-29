@@ -4,14 +4,12 @@
 
 #include "lexer.h"
 
+#include <unordered_map>
 #include <utility>
 
 #include "lox/lox.h"
 
-
-Lexer::Lexer(std::string source): source_(std::move(source)) {
-
-}
+Lexer::Lexer(std::string source) : source_(std::move(source)) {}
 
 bool Lexer::end() {
     return current_ >= source_.size();
@@ -34,112 +32,111 @@ Token Lexer::next() {
         char ch = lookahead(0);
         start_ = current_;
         switch (ch) {
-            case EOF:
-                return {Token::Kind::END, "<EOF>"};
-            case '(':
+        case EOF:
+            return {Token::Kind::END, "<EOF>"};
+        case '(':
+            consume();
+            return {Token::Kind::LEFT_PAREN, "("};
+        case ')':
+            consume();
+            return {Token::Kind::RIGHT_PAREN, ")"};
+        case '{':
+            consume();
+            return {Token::Kind::LEFT_BRACE, "{"};
+        case '}':
+            consume();
+            return {Token::Kind::RIGHT_BRACE, "}"};
+        case ',':
+            consume();
+            return {Token::Kind::COMMA, ","};
+        case '.':
+            consume();
+            return {Token::Kind::DOT, "."};
+        case '-':
+            consume();
+            return {Token::Kind::MINUS, "-"};
+        case '+':
+            consume();
+            return {Token::Kind::PLUS, "+"};
+        case ';':
+            consume();
+            return {Token::Kind::SEMICOLON, ";"};
+        case '*':
+            consume();
+            return {Token::Kind::STAR, "*"};
+        case '#':
+            consume();
+            return {Token::Kind::NUMBER_SIGN, "#"};
+        case ':':
+            consume();
+            return {Token::Kind::COLON, ":"};
+        case '!':
+            consume();
+            if (lookahead(0) == '=') {
                 consume();
-                return {Token::Kind::LEFT_PAREN, "("};
-            case ')':
+                return {Token::Kind::BANG_EQUAL, "!="};
+            } else {
+                return {Token::Kind::BANG, "!"};
+            }
+        case '=':
+            consume();
+            if (lookahead(0) == '=') {
                 consume();
-                return {Token::Kind::RIGHT_PAREN, ")"};
-            case '{':
+                return {Token::Kind::EQUAL_EQUAL, "=="};
+            } else {
+                return {Token::Kind::EQUAL, "="};
+            }
+        case '<':
+            consume();
+            if (lookahead(0) == '=') {
                 consume();
-                return {Token::Kind::LEFT_BRACE, "{"};
-            case '}':
+                return {Token::Kind::LESS_EQUAL, "<="};
+            } else {
+                return {Token::Kind::LESS, "<"};
+            }
+        case '>':
+            consume();
+            if (lookahead(0) == '=') {
                 consume();
-                return {Token::Kind::RIGHT_BRACE, "}"};
-            case ',':
+                return {Token::Kind::GREATER_EQUAL, ">="};
+            } else {
+                return {Token::Kind::GREATER, ">"};
+            }
+        case '/':
+            consume();
+            if (lookahead(0) == '/') {
                 consume();
-                return {Token::Kind::COMMA, ","};
-            case '.':
-                consume();
-                return {Token::Kind::DOT, "."};
-            case '-':
-                consume();
-                return {Token::Kind::MINUS, "-"};
-            case '+':
-                consume();
-                return {Token::Kind::PLUS, "+"};
-            case ';':
-                consume();
-                return {Token::Kind::SEMICOLON, ";"};
-            case '*':
-                consume();
-                return {Token::Kind::STAR, "*"};
-            case '#':
-                consume();
-                return {Token::Kind::NUMBER_SIGN, "#"};
-            case ':':
-                consume();
-                return {Token::Kind::COLON, ":"};
-            case '!':
-                consume();
-                if (lookahead(0) == '=') {
+                while (lookahead(0) != '\n' && !end()) {
                     consume();
-                    return {Token::Kind::BANG_EQUAL, "!="};
-                } else {
-                    return {Token::Kind::BANG, "!"};
                 }
-            case '=':
-                consume();
-                if (lookahead(0) == '=') {
+                if (lookahead(0) == '\n') {
                     consume();
-                    return {Token::Kind::EQUAL_EQUAL, "=="};
-                } else {
-                    return {Token::Kind::EQUAL, "="};
                 }
-            case '<':
-                consume();
-                if (lookahead(0) == '=') {
-                    consume();
-                    return {Token::Kind::LESS_EQUAL, "<="};
-                } else {
-                    return {Token::Kind::LESS, "<"};
-                }
-            case '>':
-                consume();
-                if (lookahead(0) == '=') {
-                    consume();
-                    return {Token::Kind::GREATER_EQUAL, ">="};
-                } else {
-                    return {Token::Kind::GREATER, ">"};
-                }
-            case '/':
-                consume();
-                if (lookahead(0) == '/') {
-                    consume();
-                    while (lookahead(0) != '\n' && !end()) {
-                        consume();
-                    }
-                    if (lookahead(0) == '\n') {
-                        consume();
-                    }
-                    break;
-                } else {
-                    return {Token::Kind::SLASH, "/"};
-                }
-            case ' ':
-            case '\r':
-            case '\t':
-                consume();
                 break;
-            case '\n':
+            } else {
+                return {Token::Kind::SLASH, "/"};
+            }
+        case ' ':
+        case '\r':
+        case '\t':
+            consume();
+            break;
+        case '\n':
+            consume();
+            line_++;
+            break;
+        case '"':
+            return string();
+        default:
+            if (std::isdigit(ch)) {
+                return number();
+            } else if (std::isalnum(ch)) {
+                return identifier();
+            } else {
                 consume();
-                line_++;
-                break;
-            case '"':
-                return string();
-            default:
-                if (std::isdigit(ch)) {
-                    return number();
-                } else if (std::isalnum(ch)) {
-                    return identifier();
-                }
-                else {
-                    consume();
-                    auto str = source_.substr(start_, current_ - start_);
-                    return {Token::Kind::UNEXPECTED, "<unexpected>(" + str + ")"};
-                }
+                auto str = source_.substr(start_, current_ - start_);
+                return {Token::Kind::UNEXPECTED, "<unexpected>(" + str + ")"};
+            }
         }
     }
 }
@@ -188,27 +185,25 @@ Token Lexer::number() {
     return {Token::Kind::NUMBER, source_.substr(start_, current_ - start_)};
 }
 
-
 static std::unordered_map<std::string, Token::Kind> keywords = {
-    {"and",    Token::Kind::AND},
-    {"class",  Token::Kind::CLASS},
-    {"else",   Token::Kind::ELSE},
-    {"false",  Token::Kind::FALSE},
-    {"for",    Token::Kind::FOR},
-    {"fun",    Token::Kind::FUN},
-    {"if",     Token::Kind::IF},
-    {"nil",    Token::Kind::NIL},
-    {"or",     Token::Kind::OR},
-    {"print",  Token::Kind::PRINT},
+    {"and", Token::Kind::AND},
+    {"class", Token::Kind::CLASS},
+    {"else", Token::Kind::ELSE},
+    {"false", Token::Kind::FALSE},
+    {"for", Token::Kind::FOR},
+    {"fun", Token::Kind::FUN},
+    {"if", Token::Kind::IF},
+    {"nil", Token::Kind::NIL},
+    {"or", Token::Kind::OR},
+    {"print", Token::Kind::PRINT},
     {"return", Token::Kind::RETURN},
-    {"super",  Token::Kind::SUPER},
-    {"this",   Token::Kind::THIS},
-    {"true",   Token::Kind::TRUE},
-    {"var",    Token::Kind::VAR},
-    {"while",  Token::Kind::WHILE},
-    {"break",  Token::Kind::BREAK},
+    {"super", Token::Kind::SUPER},
+    {"this", Token::Kind::THIS},
+    {"true", Token::Kind::TRUE},
+    {"var", Token::Kind::VAR},
+    {"while", Token::Kind::WHILE},
+    {"break", Token::Kind::BREAK},
 };
-
 
 Token Lexer::identifier() {
     char ch = lookahead(0);

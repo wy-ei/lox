@@ -7,9 +7,7 @@
 #include <string>
 
 #include "lox/exception.h"
-
-
-namespace lox {
+#include "lox/function.h"
 
 std::string Value::str() const {
     if (is<nullptr_t>()) {
@@ -30,6 +28,9 @@ std::string Value::str() const {
     if (is<std::string>()) {
         return as<std::string>();
     }
+    if (is<std::shared_ptr<Callable>>()) {
+        return "function<" + as<std::shared_ptr<Callable>>()->name() + ">";
+    }
     return "<unknown value type>";
 }
 
@@ -46,13 +47,12 @@ Value::operator bool() const {
     return true;
 }
 
-std::string format_unexpected_operands_error_message(const std::string &op,
-                                                     const std::string &lhs_type,
-                                                     const std::string &rhs_type) {
-    return "unsupported operand(s) type for '" + op + "': '" + lhs_type +  "' and '" + rhs_type + "'";
+std::string format_unexpected_operands_error_message(
+    const std::string &op, const std::string &lhs_type, const std::string &rhs_type) {
+    return "unsupported operand(s) type for '" + op + "': '" + lhs_type + "' and '" + rhs_type + "'";
 }
 
-Value Value::operator+(const lox::Value &rhs) const {
+Value Value::operator+(const Value &rhs) const {
     if (is<std::string>() && rhs.is<std::string>()) {
         return Value{as<std::string>() + rhs.as<std::string>()};
     }
@@ -65,56 +65,56 @@ Value Value::operator+(const lox::Value &rhs) const {
     throw TypeError(format_unexpected_operands_error_message("+", type(), rhs.type()));
 }
 
-Value Value::operator-(const lox::Value &rhs) const {
+Value Value::operator-(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() - rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message("-", type(), rhs.type()));
 }
 
-Value Value::operator*(const lox::Value &rhs) const {
+Value Value::operator*(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() * rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message("*", type(), rhs.type()));
 }
 
-Value Value::operator/(const lox::Value &rhs) const {
+Value Value::operator/(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() / rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message("/", type(), rhs.type()));
 }
 
-Value Value::operator>(const lox::Value &rhs) const {
+Value Value::operator>(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() > rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message(">", type(), rhs.type()));
 }
 
-Value Value::operator>=(const lox::Value &rhs) const {
+Value Value::operator>=(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() >= rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message(">=", type(), rhs.type()));
 }
 
-Value Value::operator<(const lox::Value &rhs) const {
+Value Value::operator<(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() < rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message("<", type(), rhs.type()));
 }
 
-Value Value::operator<=(const lox::Value &rhs) const {
+Value Value::operator<=(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() <= rhs.as<double>()};
     }
     throw TypeError(format_unexpected_operands_error_message("<=", type(), rhs.type()));
 }
 
-Value Value::operator!=(const lox::Value &rhs) const {
+Value Value::operator!=(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() != rhs.as<double>()};
     }
@@ -124,7 +124,7 @@ Value Value::operator!=(const lox::Value &rhs) const {
     throw TypeError(format_unexpected_operands_error_message("!=", type(), rhs.type()));
 }
 
-Value Value::operator==(const lox::Value &rhs) const {
+Value Value::operator==(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() == rhs.as<double>()};
     }
@@ -149,5 +149,3 @@ std::string Value::type() const {
     }
     return "unknown";
 }
-
-}  // namespace lox

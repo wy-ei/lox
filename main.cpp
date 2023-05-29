@@ -7,11 +7,11 @@ int main(int argc, char **argv) {
         exit(64);
     }
 
-    lox::Lox app;
+    Lox lox;
     if (argc == 2) {
-        app.execute_script(argv[1]);
+        lox.execute_script(argv[1]);
     } else {
-        app.prompt();
+        lox.prompt();
     }
     exit(0);
 }

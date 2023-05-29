@@ -2,164 +2,208 @@
 // Created by wy on 22.5.23.
 //
 
-#ifndef LOX_STATEMENT_H
-#define LOX_STATEMENT_H
+#pragma once
 
 #include <memory>
 #include <utility>
+#include <vector>
 
-#include "lox/value.h"
 #include "lox/expr.h"
-
-namespace lox {
+#include "lox/value.h"
 
 /*
  * program  ->  declaration* EOF
  *
  * declaration  ->  var_declaration
+ *                  | funDecl
  *                  | statement;
  *
  * statement -> expresion_stmt
+ *              | returnStmt
  *              | ifStmt
  *              | forStmt
  *              | whileStmt
  *              | print_stmt;
  *              | block
  *
+ * returnStmt -> "return" expression ? ";"
  * var_declaration -> "var" IDENTIFIER ("=" expression)? ";" ;
  *
  * block      -> "{" declaration* "}" ;
+ *
+ * funDec   ->  "fun" function;
+ * function  -> IDENTIFIER? "(" parameters? ")" block ;
+ * parameters  -> IDENTIFIER ("," IDENTIFIER)* ;
  */
+
+namespace stmt {
+
 
 class Expression;
 class Print;
 class Var;
 class Block;
-class IfStmt;
-class WhileStmt;
-class ForStmt;
+class If;
+class While;
+class For;
+class Function;
+class Return;
 
-class StmtVisitor {
-public:
-    virtual Value visitExpressionStmt(Expression* stmt) = 0;
 
-    virtual Value visitPrintStmt(Print* stmt) = 0;
-//    virtual Value visitInput(std::shared_ptr<Input> stmt) = 0;
-    virtual Value visitBlockStmt(Block *stmt) = 0;
-    virtual Value visitVarStmt(Var* stmt) = 0;
-    virtual Value visitIfStmt(IfStmt *stmt) = 0;
-    virtual Value visitWhileStmt(WhileStmt *stmt) = 0;
-    virtual Value visitForStmt(ForStmt *stmt) = 0;
+class Visitor {
+ public:
+    virtual Value visit_expression_stmt(Expression* stmt) = 0;
 
-//    virtual Value visitFunction(std::shared_ptr<Function> stmt) = 0;
-//
-//    virtual Value visitReturn(std::shared_ptr<Return> stmt) = 0;
-//
+    virtual Value visit_print_stmt(Print* stmt) = 0;
+    virtual Value visit_block_stmt(stmt::Block* stmt) = 0;
+    virtual Value visit_var_stmt(Var* stmt) = 0;
+    virtual Value visit_if_stmt(If* stmt) = 0;
+    virtual Value visit_while_stmt(While* stmt) = 0;
+    virtual Value visit_for_stmt(For* stmt) = 0;
+    virtual Value visit_function_stmt(Function* stmt) = 0;
+    virtual Value visit_return_stmt(Return* stmt) = 0;
 //    virtual Value visitClass(std::shared_ptr<Class> stmt) = 0;
 };
 
-
 class Statement {
-public:
+ public:
     using ptr = std::shared_ptr<Statement>;
 
-    virtual Value accept(StmtVisitor *visitor) = 0;
+    virtual Value accept(Visitor *visitor) = 0;
 };
-
 
 class Expression : public Statement {
-public:
-    explicit Expression(Expr::ptr expression): expression(std::move(expression)) {}
-    Value accept(StmtVisitor *visitor) override {
-        return visitor->visitExpressionStmt(this);
+ public:
+    using ptr = std::shared_ptr<Expression>;
+
+    explicit Expression(expr::Expr::ptr expression) : expression(std::move(expression)) {}
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_expression_stmt(this);
     }
 
-    Expr::ptr expression;
+    expr::Expr::ptr expression;
 };
-
 
 class Print : public Statement {
-public:
-    explicit Print(Expr::ptr expression): expression(std::move(expression)) {}
+ public:
+    using ptr = std::shared_ptr<Print>;
+    explicit Print(expr::Expr::ptr expression) : expression(std::move(expression)) {}
 
-    Value accept(StmtVisitor *visitor) override {
-        return visitor->visitPrintStmt(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_print_stmt(this);
     }
 
-    Expr::ptr expression;
+    expr::Expr::ptr expression;
 };
 
-
 class Var : public Statement {
-public:
-    Var(Token::ptr name, Expr::ptr value): name(std::move(name)), value(std::move(value)) {}
+ public:
+    using ptr = std::shared_ptr<Var>;
+    Var(Token::ptr name, expr::Expr::ptr value) : name(std::move(name)), value(std::move(value)) {}
 
-    Value accept(lox::StmtVisitor *visitor) override {
-        return visitor->visitVarStmt(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_var_stmt(this);
     }
 
     Token::ptr name;
-    Expr::ptr value;
-
+    expr::Expr::ptr value;
 };
 
 class Block : public Statement {
-public:
-    explicit Block(std::vector<Statement::ptr> statements): statements(std::move(statements)) {}
+ public:
+    using ptr = std::shared_ptr<Block>;
 
-    Value accept(lox::StmtVisitor *visitor) override {
-        return visitor->visitBlockStmt(this);
+    explicit Block(std::vector<Statement::ptr> statements) : statements(std::move(statements)) {}
+
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_block_stmt(this);
     }
 
     std::vector<Statement::ptr> statements;
 };
 
-class IfStmt : public Statement {
-public:
-    IfStmt(Expr::ptr condition, Statement::ptr then_branch, Statement::ptr else_branch)
+class If : public Statement {
+ public:
+    using ptr = std::shared_ptr<If>;
+
+    If(expr::Expr::ptr condition, Statement::ptr then_branch, Statement::ptr else_branch)
         : condition(std::move(condition)), then_branch(std::move(then_branch)), else_branch(std::move(else_branch)) {}
 
-    Value accept(StmtVisitor *visitor) override {
-        return visitor->visitIfStmt(this);
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_if_stmt(this);
     }
 
-    Expr::ptr condition;
+    expr::Expr::ptr condition;
     Statement::ptr then_branch;
     Statement::ptr else_branch;
 };
 
-class WhileStmt : public Statement {
-public:
-    WhileStmt(Expr::ptr condition, Statement::ptr body)
-        : condition(std::move(condition)), body(std::move(body)) {}
+class While : public Statement {
+ public:
+    using ptr = std::shared_ptr<While>;
 
-    Value accept(StmtVisitor *visitor) override {
-        return visitor->visitWhileStmt(this);
+    While(expr::Expr::ptr condition, Statement::ptr body) : condition(std::move(condition)), body(std::move(body)) {}
+
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_while_stmt(this);
     }
 
-    Expr::ptr condition;
+    expr::Expr::ptr condition;
     Statement::ptr body;
 };
 
-class ForStmt : public Statement {
-public:
-    ForStmt(Statement::ptr initializer, Expr::ptr condition, Statement::ptr increment, Statement::ptr body)
-        : initializer(std::move(initializer)), condition(std::move(condition)),
-          increment(std::move(increment)), body(std::move(body)) {}
+class For : public Statement {
+ public:
+    using ptr = std::shared_ptr<For>;
 
-    Value accept(StmtVisitor *visitor) override {
-        return visitor->visitForStmt(this);
+    For(Statement::ptr initializer, expr::Expr::ptr condition, Statement::ptr increment, Statement::ptr body)
+        : initializer(std::move(initializer)), condition(std::move(condition)), increment(std::move(increment)),
+          body(std::move(body)) {}
+
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_for_stmt(this);
     }
 
     Statement::ptr initializer;
-    Expr::ptr condition;
+    expr::Expr::ptr condition;
     Statement::ptr increment;
     Statement::ptr body;
 };
 
+class Function : public Statement, public std::enable_shared_from_this<Function> {
+ public:
+    using ptr = std::shared_ptr<Function>;
 
-} // namespace lox
+    Function(Token::ptr name, std::vector<Token::ptr> params, Statement::ptr body) {
+        this->name = std::move(name);
+        this->params = std::move(params);
+        this->body = std::move(body);
+    }
 
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_function_stmt(this);
+    }
 
+    Token::ptr name;
+    std::vector<Token::ptr> params;
+    Statement::ptr body;
+};
 
-#endif //LOX_STATEMENT_H
+class Return : public Statement {
+ public:
+    using ptr = std::shared_ptr<Return>;
+
+    Return(Token::ptr keyword, expr::Expr::ptr value) {
+        this->keyword = std::move(keyword);
+        this->value = std::move(value);
+    }
+
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_return_stmt(this);
+    }
+
+    Token::ptr keyword;
+    expr::Expr::ptr value;
+};
+
+}  // namespace stmt

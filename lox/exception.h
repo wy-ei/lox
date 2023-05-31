@@ -5,12 +5,12 @@
 #pragma once
 
 #include <exception>
-#include <utility>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
-#include "lox/value.h"
 #include "lox/token.h"
+#include "lox/value.h"
 
 class RuntimeError : public std::runtime_error {
  public:
@@ -29,7 +29,6 @@ class TypeError : public std::exception {
  private:
     std::string message_;
 };
-
 
 class ReturnException : public std::exception {
  public:

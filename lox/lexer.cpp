@@ -4,8 +4,8 @@
 
 #include "lox/lexer.h"
 
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 #include "lox/lox.h"
@@ -41,41 +41,41 @@ void Lexer::scan_next() {
         break;
     case '{':
         add_token(Token::LEFT_BRACE);
-            break;
+        break;
     case '}':
         add_token(Token::RIGHT_BRACE);
-            break;
+        break;
     case ',':
         add_token(Token::COMMA);
-            break;
+        break;
     case '.':
         add_token(Token::DOT);
-            break;
+        break;
     case '-':
         add_token(Token::MINUS);
-            break;
+        break;
     case '+':
         add_token(Token::PLUS);
-            break;
+        break;
     case ';':
         add_token(Token::SEMICOLON);
-            break;
+        break;
     case '*':
         add_token(Token::STAR);
-            break;
+        break;
     case '#':
         add_token(Token::NUMBER_SIGN);
-            break;
+        break;
     case ':':
         add_token(Token::COLON);
-            break;
+        break;
     case '!':
         if (check('=')) {
             add_token(Token::BANG_EQUAL);
         } else {
             add_token(Token::BANG);
         }
-            break;
+        break;
     case '=':
         if (check('=')) {
             add_token(Token::EQUAL_EQUAL);
@@ -89,14 +89,14 @@ void Lexer::scan_next() {
         } else {
             add_token(Token::LESS);
         }
-            break;
+        break;
     case '>':
         if (check('=')) {
             add_token(Token::GREATER_EQUAL);
         } else {
             add_token(Token::GREATER);
         }
-            break;
+        break;
     case '/':
         if (check('/')) {
             while (!is_at_end() && consume() != '\n') {
@@ -112,14 +112,14 @@ void Lexer::scan_next() {
         break;
     case '"':
         string();
-            break;
+        break;
     default:
         if (std::isdigit(ch)) {
             number();
         } else if (std::isalnum(ch) || ch == '_') {
             identifier();
         } else {
-            std::string text {ch};
+            std::string text{ch};
             add_token(Token::UNEXPECTED, "<UNEXPECTED>");
             throw RuntimeError(tokens_.back(), "unknown character: `" + text + "`");
         }

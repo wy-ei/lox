@@ -265,4 +265,4 @@ class Super : public Expr {
     Token::ptr method;
 };
 
-}  // namespace expr
+} // namespace expr

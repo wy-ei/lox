@@ -35,5 +35,5 @@ class Lexer {
     int start_{0};
     int current_{0};
     int line_{1};
-    int col_ {0};
+    int col_{0};
 };

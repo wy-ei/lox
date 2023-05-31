@@ -39,11 +39,9 @@ void Lox::execute(const std::string &script) {
         resolver->resolve(statements);
 
         interpreter_.interpret(statements);
-    }
-    catch(const RuntimeError &e) {
+    } catch (const RuntimeError &e) {
         std::cerr << "line:" << e.token->line << "  " << e.what() << std::endl;
-    }
-    catch (const std::exception &e) {
+    } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 }

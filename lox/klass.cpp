@@ -4,9 +4,9 @@
 
 #include "lox/klass.h"
 
-#include <utility>
 #include "lox/exception.h"
 #include "lox/instance.h"
+#include <utility>
 
 std::ostream &operator<<(std::ostream &os, const LoxClass &k) {
     os << k.name();
@@ -41,4 +41,3 @@ std::shared_ptr<LoxFunction> LoxClass::find_method(const std::string &name) cons
     }
     return nullptr;
 }
-

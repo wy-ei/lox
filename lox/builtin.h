@@ -2,11 +2,10 @@
 // Created by wy on 29.5.23.
 //
 
-#include <sys/time.h>
-#include <string>
-#include <vector>
 #include <ctime>
-
+#include <string>
+#include <sys/time.h>
+#include <vector>
 
 #include "lox/callable.h"
 #include "lox/interpreter.h"

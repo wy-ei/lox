@@ -4,7 +4,6 @@
 
 #include "lox/instance.h"
 
-
 std::string LoxInstance::str() const {
     return "instance<" + klass_.str() + ">";
 }

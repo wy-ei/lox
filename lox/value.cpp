@@ -8,8 +8,8 @@
 
 #include "lox/exception.h"
 #include "lox/function.h"
-#include "lox/klass.h"
 #include "lox/instance.h"
+#include "lox/klass.h"
 
 std::string Value::str() const {
     if (is<nullptr_t>()) {
@@ -55,8 +55,7 @@ Value::operator bool() const {
     return true;
 }
 
-std::string format_type_error_message(
-    const std::string &op, const std::string &lhs_type, const std::string &rhs_type) {
+std::string format_type_error_message(const std::string &op, const std::string &lhs_type, const std::string &rhs_type) {
     return "unsupported operand(s) type for '" + op + "': '" + lhs_type + "' and '" + rhs_type + "'";
 }
 

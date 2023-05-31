@@ -7,5 +7,4 @@
 #include <string>
 #include <utility>
 
-Token::Token(Token::Kind kind, std::string lexeme, int line)
-    : kind(kind), lexeme(std::move(lexeme)), line(line) {}
+Token::Token(Token::Kind kind, std::string lexeme, int line) : kind(kind), lexeme(std::move(lexeme)), line(line) {}

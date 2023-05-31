@@ -32,7 +32,7 @@ class Environment {
     }
 
     Value get(size_t depth, const std::string &name) {
-        Environment* env = this;
+        Environment *env = this;
         while (depth > 0) {
             env = env->enclosing_.get();
             depth--;
@@ -83,10 +83,10 @@ class Environment {
     }
 
     void print() {
-        Environment* env = this;
+        Environment *env = this;
         int i = 0;
         while (env) {
-            std::string space(i * 4,  ' ');
+            std::string space(i * 4, ' ');
             for (const auto &item : env->values_) {
                 std::cout << space << item.first << ": " << item.second.str() << std::endl;
             }

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "lox/exception.h"
@@ -39,7 +39,6 @@ class Parser {
     std::vector<stmt::Statement::ptr> parse();
 
  private:
-
     expr::Expr::ptr assignment();
     expr::Expr::ptr expression();
     expr::Expr::ptr equality();

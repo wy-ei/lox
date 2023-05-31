@@ -10,12 +10,12 @@
 #include <string>
 #include <utility>
 
+#include "lox/builtin.h"
 #include "lox/function.h"
+#include "lox/instance.h"
+#include "lox/klass.h"
 #include "lox/return.h"
 #include "lox/token.h"
-#include "lox/klass.h"
-#include "lox/instance.h"
-#include "lox/builtin.h"
 
 Interpreter::Interpreter() {
     globals_environment_ = std::make_shared<Environment>();
@@ -74,7 +74,7 @@ Value Interpreter::visit_binary_expr(expr::Binary *expr) {
         default:
             throw std::runtime_error("unknown binary operator");
         }
-    } catch(const std::exception &e) {
+    } catch (const std::exception &e) {
         throw RuntimeError(expr->op, e.what());
     }
 }
@@ -152,26 +152,25 @@ Value Interpreter::visit_super_expr(expr::Super *expr) {
 
     LoxFunction::ptr method = super->find_method(expr->method->lexeme);
     if (method == nullptr) {
-        throw RuntimeError(expr->method,
-                           "Undefined property '" + expr->method->lexeme + "'.");
+        throw RuntimeError(expr->method, "Undefined property '" + expr->method->lexeme + "'.");
     }
 
     method = method->bind(object);
     return method;
 }
 
-Value Interpreter::visit_expression_stmt(stmt::Expression* stmt) {
+Value Interpreter::visit_expression_stmt(stmt::Expression *stmt) {
     Value value = evaluate(stmt->expression.get());
     return value;
 }
 
-Value Interpreter::visit_print_stmt(stmt::Print* stmt) {
+Value Interpreter::visit_print_stmt(stmt::Print *stmt) {
     Value value = evaluate(stmt->expression.get());
     std::cout << value.str() << std::endl;
     return nullptr;
 }
 
-Value Interpreter::visit_var_stmt(stmt::Var* stmt) {
+Value Interpreter::visit_var_stmt(stmt::Var *stmt) {
     Value value;
     if (stmt->value != nullptr) {
         value = evaluate(stmt->value.get());
@@ -181,12 +180,12 @@ Value Interpreter::visit_var_stmt(stmt::Var* stmt) {
     return nullptr;
 }
 
-Value Interpreter::visit_block_stmt(stmt::Block* stmt) {
+Value Interpreter::visit_block_stmt(stmt::Block *stmt) {
     execute_block(stmt->statements, std::make_shared<Environment>(environment_));
     return nullptr;
 }
 
-Value Interpreter::visit_if_stmt(stmt::If* stmt) {
+Value Interpreter::visit_if_stmt(stmt::If *stmt) {
     Value value = evaluate(stmt->condition.get());
     if (value) {
         execute(stmt->then_branch.get());
@@ -212,7 +211,7 @@ Value Interpreter::visit_logical_expr(expr::Logical *expr) {
     return evaluate(expr->right.get());
 }
 
-Value Interpreter::visit_while_stmt(stmt::While* stmt) {
+Value Interpreter::visit_while_stmt(stmt::While *stmt) {
     std::shared_ptr<void> defer(nullptr, [this, previous = this->environment_](void *) {
         this->environment_ = previous;
     });
@@ -228,7 +227,7 @@ Value Interpreter::visit_while_stmt(stmt::While* stmt) {
     return nullptr;
 }
 
-Value Interpreter::visit_for_stmt(stmt::For* stmt) {
+Value Interpreter::visit_for_stmt(stmt::For *stmt) {
     std::shared_ptr<void> defer(nullptr, [this, previous = this->environment_](void *) {
         this->environment_ = previous;
     });
@@ -244,14 +243,14 @@ Value Interpreter::visit_for_stmt(stmt::For* stmt) {
     return nullptr;
 }
 
-Value Interpreter::visit_function_stmt(stmt::Function* stmt) {
+Value Interpreter::visit_function_stmt(stmt::Function *stmt) {
     auto func = std::make_shared<LoxFunction>(stmt->shared_from_this(), environment_);
     auto callable = std::dynamic_pointer_cast<Callable>(func);
     this->environment_->define(stmt->name->lexeme, callable);
     return callable;
 }
 
-Value Interpreter::visit_return_stmt(stmt::Return* stmt) {
+Value Interpreter::visit_return_stmt(stmt::Return *stmt) {
     Value value = nullptr;
     if (stmt->value) {
         value = evaluate(stmt->value.get());

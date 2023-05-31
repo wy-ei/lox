@@ -76,7 +76,7 @@ Value Resolver::visit_var_stmt(stmt::Var *stmt) {
 
 Value Resolver::visit_function_stmt(stmt::Function *stmt) {
     declare(stmt->name);
-    define(stmt->name);  // lets a function recursively refer to itself inside its own body
+    define(stmt->name); // lets a function recursively refer to itself inside its own body
 
     resolve_function(stmt);
 

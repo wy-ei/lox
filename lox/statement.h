@@ -41,7 +41,6 @@
 
 namespace stmt {
 
-
 class Expression;
 class Print;
 class Var;
@@ -55,16 +54,16 @@ class Class;
 
 class Visitor {
  public:
-    virtual Value visit_expression_stmt(Expression* stmt) = 0;
+    virtual Value visit_expression_stmt(Expression *stmt) = 0;
 
-    virtual Value visit_print_stmt(Print* stmt) = 0;
-    virtual Value visit_block_stmt(stmt::Block* stmt) = 0;
-    virtual Value visit_var_stmt(Var* stmt) = 0;
-    virtual Value visit_if_stmt(If* stmt) = 0;
-    virtual Value visit_while_stmt(While* stmt) = 0;
-    virtual Value visit_for_stmt(For* stmt) = 0;
-    virtual Value visit_function_stmt(Function* stmt) = 0;
-    virtual Value visit_return_stmt(Return* stmt) = 0;
+    virtual Value visit_print_stmt(Print *stmt) = 0;
+    virtual Value visit_block_stmt(stmt::Block *stmt) = 0;
+    virtual Value visit_var_stmt(Var *stmt) = 0;
+    virtual Value visit_if_stmt(If *stmt) = 0;
+    virtual Value visit_while_stmt(While *stmt) = 0;
+    virtual Value visit_for_stmt(For *stmt) = 0;
+    virtual Value visit_function_stmt(Function *stmt) = 0;
+    virtual Value visit_return_stmt(Return *stmt) = 0;
     virtual Value visit_class_stmt(Class *stmt) = 0;
 };
 
@@ -213,7 +212,7 @@ class Class : public Statement {
  public:
     using ptr = std::shared_ptr<Class>;
 
-    Class(Token::ptr name, expr::Variable::ptr super,  std::vector<stmt::Function::ptr> methods) {
+    Class(Token::ptr name, expr::Variable::ptr super, std::vector<stmt::Function::ptr> methods) {
         this->name = std::move(name);
         this->methods = std::move(methods);
         this->super = std::move(super);
@@ -228,4 +227,4 @@ class Class : public Statement {
     std::vector<stmt::Function::ptr> methods;
 };
 
-}  // namespace stmt
+} // namespace stmt

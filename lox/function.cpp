@@ -4,12 +4,12 @@
 
 #include "lox/function.h"
 
-#include <utility>
-#include <iostream>
 #include "lox/environment.h"
 #include "lox/interpreter.h"
 #include "lox/return.h"
 #include "lox/value.h"
+#include <iostream>
+#include <utility>
 
 Value LoxFunction::call(Interpreter *interpreter, const std::vector<Value> &arguments) {
     Environment::ptr env = std::make_shared<Environment>(closure_);

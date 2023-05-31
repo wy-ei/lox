@@ -19,9 +19,9 @@ run in REPL mode:
 ```
 $ ./lox 
 > var a = 123;
-> var b = 234;
+> var b = 1;
 > b + a;
-357
+124
 > quit
 ```
 

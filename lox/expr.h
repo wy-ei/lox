@@ -12,12 +12,6 @@
 #include "lox/token.h"
 #include "lox/value.h"
 
-namespace stmt {
-
-class Function;
-
-}
-
 namespace expr {
 
 class Binary;
@@ -57,7 +51,6 @@ class Visitor {
     virtual Value visit_set_expr(Set *expr) = 0;
     virtual Value visit_this_expr(This *expr) = 0;
     virtual Value visit_super_expr(Super *expr) = 0;
-
     virtual ~Visitor() = default;
 };
 
@@ -257,7 +250,7 @@ class This : public Expr {
 };
 
 class Super : public Expr {
-public:
+ public:
     using ptr = std::shared_ptr<Super>;
     explicit Super(Token::ptr keyword, Token::ptr method) {
         this->keyword = std::move(keyword);

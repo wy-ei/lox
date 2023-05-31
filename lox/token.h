@@ -70,11 +70,7 @@ class Token {
         UNEXPECTED,
     };
 
-    friend std::ostream &operator<<(std::ostream &os, const Token &token);
-
     Token(Kind kind, std::string lexeme, int line);
-
-    std::string str() const;
 
     Kind kind;
     std::string lexeme;

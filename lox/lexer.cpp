@@ -99,7 +99,7 @@ void Lexer::scan_next() {
             break;
     case '/':
         if (check('/')) {
-            while (consume() != '\n') {
+            while (!is_at_end() && consume() != '\n') {
             }
         } else {
             add_token(Token::SLASH);
@@ -163,10 +163,10 @@ void Lexer::number() {
     while (!is_at_end() && std::isdigit(lookahead(0))) {
         consume();
     }
-    if (lookahead(0) == '.' && std::isdigit(lookahead(1))) {
+    if (!is_at_end() && lookahead(0) == '.' && std::isdigit(lookahead(1))) {
         consume();
 
-        while (std::isdigit(lookahead(0))) {
+        while (!is_at_end() && std::isdigit(lookahead(0))) {
             consume();
         }
     }
@@ -195,7 +195,7 @@ static std::unordered_map<std::string, Token::Kind> keywords = {
 
 void Lexer::identifier() {
     char ch = lookahead(0);
-    while (isalnum(ch) || ch == '_') {
+    while (!is_at_end() && (isalnum(ch) || ch == '_')) {
         consume();
         ch = lookahead(0);
     }

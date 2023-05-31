@@ -186,8 +186,7 @@ expr::Expr::ptr Parser::primary() {
     if (match(Token::IDENTIFIER)) {
         return std::make_shared<expr::Variable>(previous());
     }
-
-    throw RuntimeError(peek(), "unexpected token " + peek()->str());
+    throw RuntimeError(peek(), "unexpected token '" + peek()->lexeme + "'");
 }
 
 std::vector<stmt::Statement::ptr> Parser::parse() {

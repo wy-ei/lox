@@ -31,12 +31,7 @@ void Lox::execute(const std::string &script) {
 
     try {
         tokens = lexer.scan();
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return;
-    }
 
-    try {
         Parser parser(tokens);
         std::vector<stmt::Statement::ptr> statements = parser.parse();
 
@@ -44,7 +39,11 @@ void Lox::execute(const std::string &script) {
         resolver->resolve(statements);
 
         interpreter_.interpret(statements);
-    } catch (const std::exception &e) {
+    }
+    catch(const RuntimeError &e) {
+        std::cerr << "line:" << e.token->line << "  " << e.what() << std::endl;
+    }
+    catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 }
@@ -58,7 +57,10 @@ void Lox::prompt() {
         if (line.empty() || line[0] == '#') {
             continue;
         }
+        if (line == "quit") {
+            break;
+        }
         execute(line);
-        std::cout << "> ";
+        std::cout << "> " << std::flush;
     }
 }

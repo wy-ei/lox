@@ -31,9 +31,9 @@ class TypeError : public std::exception {
 };
 
 
-class Return : public std::exception {
+class ReturnException : public std::exception {
  public:
-    explicit Return(Value value) : value(value) {}
+    explicit ReturnException(Value value) : value(std::move(value)) {}
 
     Value value;
 };

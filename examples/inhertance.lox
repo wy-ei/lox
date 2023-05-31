@@ -1,0 +1,19 @@
+class A {
+  method() {
+    return "a";
+  }
+}
+
+class B < A {
+  method() {
+    return "b";
+  }
+
+  test() {
+    return super.method();
+  }
+}
+
+class C < B {}
+
+assert(C().test() == "a");

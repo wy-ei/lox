@@ -31,6 +31,15 @@ class Environment {
         return it != values_.end();
     }
 
+    Value get(size_t depth, const std::string &name) {
+        Environment* env = this;
+        while (depth > 0) {
+            env = env->enclosing_.get();
+            depth--;
+        }
+        return env->values_.count(name) ? env->values_[name] : nullptr;
+    }
+
     Value get(const Token::ptr &name) {
         if (values_.count(name->lexeme)) {
             return values_[name->lexeme];
@@ -41,6 +50,18 @@ class Environment {
         }
 
         throw RuntimeError(name, "Undefined variable '" + name->lexeme + "'.");
+    }
+
+    Value get(const std::string &name) {
+        if (values_.count(name)) {
+            return values_[name];
+        }
+
+        if (enclosing_ != nullptr) {
+            return enclosing_->get(name);
+        }
+
+        throw std::runtime_error("Undefined variable '" + name + "'.");
     }
 
     void assign(const Token::ptr &name, const Value &value) {
@@ -55,6 +76,23 @@ class Environment {
         }
 
         throw RuntimeError(name, "Undefined variable '" + name->lexeme + "'.");
+    }
+
+    ptr enclosing() const {
+        return enclosing_;
+    }
+
+    void print() {
+        Environment* env = this;
+        int i = 0;
+        while (env) {
+            std::string space(i * 4,  ' ');
+            for (const auto &item : env->values_) {
+                std::cout << space << item.first << ": " << item.second.str() << std::endl;
+            }
+            i++;
+            env = env->enclosing_.get();
+        }
     }
 
  private:

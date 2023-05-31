@@ -7,13 +7,12 @@
 #include <string>
 #include <utility>
 
-Token::Token(Token::Kind kind) : kind(kind) {}
-
-Token::Token(Token::Kind kind, std::string lexeme) : kind(kind), lexeme(std::move(lexeme)) {}
+Token::Token(Token::Kind kind, std::string lexeme, int line)
+    : kind(kind), lexeme(std::move(lexeme)), line(line) {}
 
 std::string Token::str() const {
     std::ostringstream os;
-    os << static_cast<int>(kind) << ":" << lexeme;
+    os << static_cast<int>(kind) << ":" << lexeme << " at line:" << line;
     return os.str();
 }
 

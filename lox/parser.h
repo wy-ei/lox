@@ -25,7 +25,7 @@
  *  unary          → ( "!" | "-" ) unary
  *                  | function
  *                  | call ;
- *  call           → primary ( "(" arguments? ")" | "," IDENTIFIER )* ;
+ *  call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
  *  arguments      → expression ( ",", expression )* ;
  *  primary        → NUMBER | STRING | "true" | "false" | "nil"
  *                 | "(" expression ")"
@@ -55,7 +55,7 @@ class Parser {
 
     stmt::Statement::ptr declaration();
     stmt::Statement::ptr var_declaration();
-    stmt::Statement::ptr func_declaration(const std::string &kind);
+    stmt::Function::ptr func_declaration(const std::string &kind);
     stmt::Statement::ptr statement();
     stmt::Statement::ptr print_statement();
     stmt::Statement::ptr expression_statement();
@@ -64,6 +64,7 @@ class Parser {
     stmt::Statement::ptr while_statement();
     stmt::Statement::ptr for_statement();
     stmt::Statement::ptr return_statement();
+    stmt::Statement::ptr class_declaration();
 
     bool match(Token::Kind kind) {
         if (check(kind)) {
@@ -95,7 +96,7 @@ class Parser {
     }
 
     bool is_at_end() {
-        return peek()->kind == Token::Kind::END;
+        return peek()->kind == Token::END;
     }
 
     bool check(Token::Kind kind) {

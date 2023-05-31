@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <ostream>
+#include <string>
 
 class Token {
  public:
@@ -71,11 +72,11 @@ class Token {
 
     friend std::ostream &operator<<(std::ostream &os, const Token &token);
 
-    explicit Token(Kind kind);
-    Token(Kind kind, std::string lexeme);
+    Token(Kind kind, std::string lexeme, int line);
 
     std::string str() const;
 
     Kind kind;
     std::string lexeme;
+    int line;
 };

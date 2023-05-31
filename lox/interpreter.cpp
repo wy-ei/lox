@@ -13,23 +13,15 @@
 #include "lox/function.h"
 #include "lox/return.h"
 #include "lox/token.h"
-
-class Now : public Callable {
- public:
-    std::string name() override {
-        return "now";
-    }
-    Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override {
-        return static_cast<double>(time(nullptr));
-    }
-    int arity() override {
-        return 0;
-    }
-};
+#include "lox/klass.h"
+#include "lox/instance.h"
+#include "lox/builtin.h"
 
 Interpreter::Interpreter() {
     globals_environment_ = std::make_shared<Environment>();
     globals_environment_->define("now", std::shared_ptr<Callable>(new Now()));
+    globals_environment_->define("assert", std::shared_ptr<Callable>(new Assert()));
+    globals_environment_->define("str", std::shared_ptr<Callable>(new ToString()));
     environment_ = std::make_shared<Environment>(globals_environment_);
 }
 
@@ -57,29 +49,33 @@ Value Interpreter::visit_binary_expr(expr::Binary *expr) {
     Value left = evaluate(expr->left.get());
     Value right = evaluate(expr->right.get());
 
-    switch (expr->op->kind) {
-    case Token::Kind::PLUS:
-        return left + right;
-    case Token::Kind::MINUS:
-        return left - right;
-    case Token::Kind::STAR:
-        return left * right;
-    case Token::Kind::SLASH:
-        return left / right;
-    case Token::Kind::GREATER:
-        return left > right;
-    case Token::Kind::GREATER_EQUAL:
-        return left >= right;
-    case Token::Kind::LESS:
-        return left < right;
-    case Token::Kind::LESS_EQUAL:
-        return left <= right;
-    case Token::Kind::BANG_EQUAL:
-        return left != right;
-    case Token::Kind::EQUAL_EQUAL:
-        return left == right;
-    default:
-        throw std::runtime_error("Unknown binary operator");
+    try {
+        switch (expr->op->kind) {
+        case Token::Kind::PLUS:
+            return left + right;
+        case Token::Kind::MINUS:
+            return left - right;
+        case Token::Kind::STAR:
+            return left * right;
+        case Token::Kind::SLASH:
+            return left / right;
+        case Token::Kind::GREATER:
+            return left > right;
+        case Token::Kind::GREATER_EQUAL:
+            return left >= right;
+        case Token::Kind::LESS:
+            return left < right;
+        case Token::Kind::LESS_EQUAL:
+            return left <= right;
+        case Token::Kind::BANG_EQUAL:
+            return left != right;
+        case Token::Kind::EQUAL_EQUAL:
+            return left == right;
+        default:
+            throw std::runtime_error("unknown binary operator");
+        }
+    } catch(const std::exception &e) {
+        throw RuntimeError(expr->op, e.what());
     }
 }
 
@@ -104,7 +100,16 @@ Value Interpreter::visit_call_expr(expr::Call *expr) {
         arguments.push_back(evaluate(arg.get()));
     }
 
-    auto callable = callee.as<std::shared_ptr<Callable>>();
+    std::shared_ptr<Callable> callable;
+    if (callee.is<LoxFunction::ptr>()) {
+        callable = std::dynamic_pointer_cast<Callable>(callee.as<LoxFunction::ptr>());
+    } else if (callee.is<LoxClass::ptr>()) {
+        callable = std::dynamic_pointer_cast<Callable>(callee.as<LoxClass::ptr>());
+    } else if (callee.is<Callable::ptr>()) {
+        callable = callee.as<Callable::ptr>();
+    } else {
+        throw RuntimeError(expr->paren, "function or method is required");
+    }
 
     if (arguments.size() != callable->arity()) {
         std::ostringstream os;
@@ -114,6 +119,45 @@ Value Interpreter::visit_call_expr(expr::Call *expr) {
     }
 
     return callable->call(this, arguments);
+}
+
+Value Interpreter::visit_get_expr(expr::Get *expr) {
+    Value object = evaluate(expr->object.get());
+    if (object.is<LoxInstance::ptr>()) {
+        return object.as<LoxInstance::ptr>()->get(expr->name);
+    }
+    throw RuntimeError(expr->name, "Only instances have properties.");
+}
+
+Value Interpreter::visit_set_expr(expr::Set *expr) {
+    Value object = evaluate(expr->object.get());
+
+    if (object.is<std::shared_ptr<LoxInstance>>()) {
+        auto ins = object.as<std::shared_ptr<LoxInstance>>();
+        Value value = evaluate(expr->value.get());
+        ins->set(expr->name, value);
+        return value;
+    }
+
+    throw RuntimeError(expr->name, "Only instances have fields.");
+}
+
+Value Interpreter::visit_this_expr(expr::This *expr) {
+    return environment_->get(expr->name);
+}
+
+Value Interpreter::visit_super_expr(expr::Super *expr) {
+    auto super = environment_->get("super").as<LoxClass::ptr>();
+    auto object = environment_->get("this").as<LoxInstance::ptr>();
+
+    LoxFunction::ptr method = super->find_method(expr->method->lexeme);
+    if (method == nullptr) {
+        throw RuntimeError(expr->method,
+                           "Undefined property '" + expr->method->lexeme + "'.");
+    }
+
+    method = method->bind(object);
+    return method;
 }
 
 Value Interpreter::visit_expression_stmt(stmt::Expression* stmt) {
@@ -201,9 +245,10 @@ Value Interpreter::visit_for_stmt(stmt::For* stmt) {
 }
 
 Value Interpreter::visit_function_stmt(stmt::Function* stmt) {
-    auto func = std::make_shared<Function>(stmt->shared_from_this(), environment_);
-    this->environment_->define(stmt->name->lexeme, std::dynamic_pointer_cast<Callable>(func));
-    return std::dynamic_pointer_cast<Callable>(func);
+    auto func = std::make_shared<LoxFunction>(stmt->shared_from_this(), environment_);
+    auto callable = std::dynamic_pointer_cast<Callable>(func);
+    this->environment_->define(stmt->name->lexeme, callable);
+    return callable;
 }
 
 Value Interpreter::visit_return_stmt(stmt::Return* stmt) {
@@ -211,7 +256,37 @@ Value Interpreter::visit_return_stmt(stmt::Return* stmt) {
     if (stmt->value) {
         value = evaluate(stmt->value.get());
     }
-    throw Return(value);
+    throw ReturnException(value);
+}
+
+Value Interpreter::visit_class_stmt(stmt::Class *stmt) {
+    Value superclass = nullptr;
+    if (stmt->super) {
+        superclass = evaluate(stmt->super.get());
+        if (!superclass.is<LoxClass::ptr>()) {
+            throw RuntimeError(stmt->super->name, "Superclass must be a class.");
+        }
+    }
+    environment_->define(stmt->name->lexeme, nullptr);
+    if (stmt->super) {
+        environment_ = std::make_shared<Environment>(environment_);
+        environment_->define("super", superclass);
+    }
+
+    std::unordered_map<std::string, LoxFunction::ptr> methods;
+    for (const auto &item : stmt->methods) {
+        auto fn = std::make_shared<LoxFunction>(item, environment_);
+        methods[item->name->lexeme] = fn;
+    }
+
+    LoxClass::ptr super;
+    if (stmt->super) {
+        environment_ = environment_->enclosing();
+        super = superclass.as<LoxClass::ptr>();
+    }
+    auto klass = std::make_shared<LoxClass>(stmt->name->lexeme, super, methods);
+    environment_->assign(stmt->name, klass);
+    return nullptr;
 }
 
 Value Interpreter::execute(stmt::Statement *statement) {

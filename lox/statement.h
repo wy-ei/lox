@@ -19,6 +19,7 @@
  *                  | statement;
  *
  * statement -> expresion_stmt
+ *              | classDecl
  *              | returnStmt
  *              | ifStmt
  *              | forStmt
@@ -29,10 +30,12 @@
  * returnStmt -> "return" expression ? ";"
  * var_declaration -> "var" IDENTIFIER ("=" expression)? ";" ;
  *
+ * classDecl  -> "class" IDENTIFIER ("<" IDENTIFIER)? "{" function* "}" ;
+ *
  * block      -> "{" declaration* "}" ;
  *
  * funDec   ->  "fun" function;
- * function  -> IDENTIFIER? "(" parameters? ")" block ;
+ * function  -> IDENTIFIER "(" parameters? ")" block ;
  * parameters  -> IDENTIFIER ("," IDENTIFIER)* ;
  */
 
@@ -48,7 +51,7 @@ class While;
 class For;
 class Function;
 class Return;
-
+class Class;
 
 class Visitor {
  public:
@@ -62,7 +65,7 @@ class Visitor {
     virtual Value visit_for_stmt(For* stmt) = 0;
     virtual Value visit_function_stmt(Function* stmt) = 0;
     virtual Value visit_return_stmt(Return* stmt) = 0;
-//    virtual Value visitClass(std::shared_ptr<Class> stmt) = 0;
+    virtual Value visit_class_stmt(Class *stmt) = 0;
 };
 
 class Statement {
@@ -204,6 +207,25 @@ class Return : public Statement {
 
     Token::ptr keyword;
     expr::Expr::ptr value;
+};
+
+class Class : public Statement {
+ public:
+    using ptr = std::shared_ptr<Class>;
+
+    Class(Token::ptr name, expr::Variable::ptr super,  std::vector<stmt::Function::ptr> methods) {
+        this->name = std::move(name);
+        this->methods = std::move(methods);
+        this->super = std::move(super);
+    }
+
+    Value accept(Visitor *visitor) override {
+        return visitor->visit_class_stmt(this);
+    }
+
+    Token::ptr name;
+    expr::Variable::ptr super;
+    std::vector<stmt::Function::ptr> methods;
 };
 
 }  // namespace stmt

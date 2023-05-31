@@ -1,0 +1,10 @@
+
+fun foo(n) {
+    fun bar(m) {
+        return n + m;
+    }
+    return bar;
+}
+
+var bar = foo(1);
+assert(bar(2) == 3);

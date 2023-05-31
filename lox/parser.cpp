@@ -28,9 +28,12 @@ expr::Expr::ptr Parser::assignment() {
         if (var) {
             Token::ptr name = var->name;
             return std::make_shared<expr::Assign>(name, value);
-        } else {
-            throw RuntimeError(equals, "invalid variable assignment");
         }
+        auto get = std::dynamic_pointer_cast<expr::Get>(expr);
+        if (get) {
+            return std::make_shared<expr::Set>(get->object, get->name, value);
+        }
+        throw RuntimeError(equals, "invalid variable assignment");
     }
 
     return expr;
@@ -65,6 +68,9 @@ expr::Expr::ptr Parser::call() {
     while (true) {
         if (match(Token::LEFT_PAREN)) {
             expr = finish_call(expr);
+        } else if (match(Token::DOT)) {
+            Token::ptr name = consume(Token::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_shared<expr::Get>(expr, name);
         } else {
             break;
         }
@@ -168,6 +174,15 @@ expr::Expr::ptr Parser::primary() {
         consume(Token::Kind::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_shared<expr::Grouping>(expr);
     }
+    if (match(Token::THIS)) {
+        return std::make_shared<expr::This>(previous());
+    }
+    if (match(Token::SUPER)) {
+        Token::ptr super = previous();
+        consume(Token::Kind::DOT, "Expect '.'  after 'super'.");
+        Token::ptr method = consume(Token::IDENTIFIER, "Expect superclass method name.");
+        return std::make_shared<expr::Super>(super, method);
+    }
     if (match(Token::IDENTIFIER)) {
         return std::make_shared<expr::Variable>(previous());
     }
@@ -191,6 +206,9 @@ stmt::Statement::ptr Parser::declaration() {
         if (match(Token::VAR)) {
             return var_declaration();
         }
+        if (match(Token::CLASS)) {
+            return class_declaration();
+        }
         return statement();
     } catch (const RuntimeError &e) {
         //        synchronize();
@@ -209,7 +227,7 @@ stmt::Statement::ptr Parser::var_declaration() {
     return std::make_shared<stmt::Var>(name, initializer);
 }
 
-stmt::Statement::ptr Parser::func_declaration(const std::string &kind) {
+stmt::Function::ptr Parser::func_declaration(const std::string &kind) {
     Token::ptr name = consume(Token::IDENTIFIER, "Expect " + kind + " name.");
     consume(Token::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Token::ptr> parameters;
@@ -333,4 +351,24 @@ stmt::Statement::ptr Parser::return_statement() {
     }
     consume(Token::SEMICOLON, "Expect ';' after return value.");
     return std::make_shared<stmt::Return>(token, value);
+}
+
+stmt::Statement::ptr Parser::class_declaration() {
+    Token::ptr name = consume(Token::IDENTIFIER, "Expect class name.");
+
+    expr::Variable::ptr super;
+    if (match(Token::LESS)) {
+        consume(Token::IDENTIFIER, "Expect super class name.");
+        super = std::make_shared<expr::Variable>(previous());
+    }
+
+    consume(Token::LEFT_BRACE, "Expect '{' after 'class'.");
+
+    std::vector<stmt::Function::ptr> methods;
+    while (!check(Token::RIGHT_BRACE) && !is_at_end()) {
+        methods.push_back(func_declaration("method"));
+    }
+    consume(Token::RIGHT_BRACE, "Expect '}' after class.");
+
+    return std::make_shared<stmt::Class>(name, super, methods);
 }

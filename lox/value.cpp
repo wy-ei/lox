@@ -8,6 +8,8 @@
 
 #include "lox/exception.h"
 #include "lox/function.h"
+#include "lox/klass.h"
+#include "lox/instance.h"
 
 std::string Value::str() const {
     if (is<nullptr_t>()) {
@@ -29,7 +31,13 @@ std::string Value::str() const {
         return as<std::string>();
     }
     if (is<std::shared_ptr<Callable>>()) {
-        return "function<" + as<std::shared_ptr<Callable>>()->name() + ">";
+        return "callable<" + as<std::shared_ptr<Callable>>()->name() + ">";
+    }
+    if (is<LoxClass::ptr>()) {
+        return as<LoxClass::ptr>()->str();
+    }
+    if (is<LoxInstance::ptr>()) {
+        return as<LoxInstance::ptr>()->str();
     }
     return "<unknown value type>";
 }
@@ -47,7 +55,7 @@ Value::operator bool() const {
     return true;
 }
 
-std::string format_unexpected_operands_error_message(
+std::string format_type_error_message(
     const std::string &op, const std::string &lhs_type, const std::string &rhs_type) {
     return "unsupported operand(s) type for '" + op + "': '" + lhs_type + "' and '" + rhs_type + "'";
 }
@@ -62,56 +70,56 @@ Value Value::operator+(const Value &rhs) const {
     if (is<std::string>() && rhs.is<double>()) {
         return Value{str() + rhs.str()};
     }
-    throw TypeError(format_unexpected_operands_error_message("+", type(), rhs.type()));
+    throw TypeError(format_type_error_message("+", type(), rhs.type()));
 }
 
 Value Value::operator-(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() - rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("-", type(), rhs.type()));
+    throw TypeError(format_type_error_message("-", type(), rhs.type()));
 }
 
 Value Value::operator*(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() * rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("*", type(), rhs.type()));
+    throw TypeError(format_type_error_message("*", type(), rhs.type()));
 }
 
 Value Value::operator/(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() / rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("/", type(), rhs.type()));
+    throw TypeError(format_type_error_message("/", type(), rhs.type()));
 }
 
 Value Value::operator>(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() > rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message(">", type(), rhs.type()));
+    throw TypeError(format_type_error_message(">", type(), rhs.type()));
 }
 
 Value Value::operator>=(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() >= rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message(">=", type(), rhs.type()));
+    throw TypeError(format_type_error_message(">=", type(), rhs.type()));
 }
 
 Value Value::operator<(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() < rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("<", type(), rhs.type()));
+    throw TypeError(format_type_error_message("<", type(), rhs.type()));
 }
 
 Value Value::operator<=(const Value &rhs) const {
     if (is<double>() && rhs.is<double>()) {
         return Value{as<double>() <= rhs.as<double>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("<=", type(), rhs.type()));
+    throw TypeError(format_type_error_message("<=", type(), rhs.type()));
 }
 
 Value Value::operator!=(const Value &rhs) const {
@@ -121,7 +129,7 @@ Value Value::operator!=(const Value &rhs) const {
     if (is<std::string>() && rhs.is<std::string>()) {
         return Value{as<std::string>() != rhs.as<std::string>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("!=", type(), rhs.type()));
+    throw TypeError(format_type_error_message("!=", type(), rhs.type()));
 }
 
 Value Value::operator==(const Value &rhs) const {
@@ -131,7 +139,10 @@ Value Value::operator==(const Value &rhs) const {
     if (is<std::string>() && rhs.is<std::string>()) {
         return Value{as<std::string>() == rhs.as<std::string>()};
     }
-    throw TypeError(format_unexpected_operands_error_message("==", type(), rhs.type()));
+    if (is<nullptr_t>() && rhs.is<nullptr_t>()) {
+        return true;
+    }
+    throw TypeError(format_type_error_message("==", type(), rhs.type()));
 }
 
 std::string Value::type() const {

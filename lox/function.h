@@ -14,17 +14,24 @@
 #include "lox/statement.h"
 
 class Interpreter;
+class LoxInstance;
 
-class Function : public Callable {
+class LoxFunction : public Callable {
  public:
-    explicit Function(std::shared_ptr<stmt::Function> func, Environment::ptr closure)
-        : func_(std::move(func)), closure_(std::move(closure)) {}
+    using ptr = std::shared_ptr<LoxFunction>;
+    explicit LoxFunction(std::shared_ptr<stmt::Function> func, Environment::ptr closure)
+        : func_(std::move(func)), closure_(std::move(closure)) {
+    }
 
     Value call(Interpreter *interpreter, const std::vector<Value> &arguments) override;
 
-    int arity() override;
+    int arity() const override;
 
-    std::string name() override;
+    std::string name() const override;
+
+    std::shared_ptr<LoxFunction> bind(std::shared_ptr<LoxInstance> instance);
+
+    bool is_initializer {false};
 
  private:
     std::shared_ptr<stmt::Function> func_;

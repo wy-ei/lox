@@ -22,6 +22,16 @@ void Resolver::resolve(const expr::Expr::ptr &stmt) {
     stmt->accept(this);
 }
 
+void Resolver::resolve_function(stmt::Function *stmt) {
+    begin_scope();
+    for (auto &param : stmt->params) {
+        declare(param);
+        define(param);
+    }
+    resolve(stmt->body);
+    end_scope();
+}
+
 void Resolver::begin_scope() {
     scopes_.emplace_back();
 }
@@ -66,16 +76,9 @@ Value Resolver::visit_var_stmt(stmt::Var *stmt) {
 
 Value Resolver::visit_function_stmt(stmt::Function *stmt) {
     declare(stmt->name);
-    define(stmt->name); // lets a function recursively refer to itself inside its own body
+    define(stmt->name);  // lets a function recursively refer to itself inside its own body
 
-
-    begin_scope();
-    for (auto &param : stmt->params) {
-        declare(param);
-        define(param);
-    }
-    resolve(stmt->body);
-    end_scope();
+    resolve_function(stmt);
 
     return nullptr;
 }
@@ -119,6 +122,66 @@ Value Resolver::visit_return_stmt(stmt::Return *stmt) {
     }
     if (scopes_.size() == 1) {
         throw RuntimeError(stmt->keyword, "Can't return from top-level code.");
+    }
+    return nullptr;
+}
+
+Value Resolver::visit_class_stmt(stmt::Class *stmt) {
+    declare(stmt->name);
+    define(stmt->name);
+
+    if (stmt->super && stmt->super->name->lexeme == stmt->name->lexeme) {
+        throw RuntimeError(stmt->name, "A class can't inherit from itself.");
+    }
+
+    class_has_super_ = false;
+    if (stmt->super) {
+        class_has_super_ = true;
+        resolve(stmt->super);
+        begin_scope();
+        scopes_.back()["super"] = true;
+    }
+
+    bool old_in_class = in_class_;
+    in_class_ = true;
+    begin_scope();
+    scopes_.back()["this"] = true;
+    for (const auto &item : stmt->methods) {
+        resolve_function(item.get());
+    }
+    end_scope();
+    if (stmt->super) {
+        end_scope();
+    }
+    class_has_super_ = false;
+    in_class_ = old_in_class;
+    return nullptr;
+}
+
+Value Resolver::visit_super_expr(expr::Super *expr) {
+    if (!in_class_) {
+        throw RuntimeError(expr->keyword, "Can't use 'super' outside of a class.");
+    }
+    if (!class_has_super_) {
+        throw RuntimeError(expr->keyword, "Can't use 'super' in a class which has no super class.");
+    }
+    return nullptr;
+}
+
+Value Resolver::visit_get_expr(expr::Get *expr) {
+    resolve(expr->object);
+    return nullptr;
+}
+
+Value Resolver::visit_set_expr(expr::Set *expr) {
+    resolve(expr->value);
+    resolve(expr->object);
+    return nullptr;
+}
+
+Value Resolver::visit_this_expr(expr::This *expr) {
+    if (!in_class_) {
+        throw RuntimeError(expr->name, "Can't use 'this' outside of a class.");
     }
     return nullptr;
 }

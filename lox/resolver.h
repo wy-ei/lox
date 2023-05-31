@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "lox/statement.h"
 #include "lox/expr.h"
 #include "lox/exception.h"
@@ -15,6 +19,7 @@ class Resolver : public stmt::Visitor, public expr::Visitor {
     void resolve(const std::vector<stmt::Statement::ptr> &statements);
     void resolve(const stmt::Statement::ptr &stmt);
     void resolve(const expr::Expr::ptr &expr);
+    void resolve_function(stmt::Function *stmt);
 
     Value visit_block_stmt(stmt::Block* stmt) override;
     Value visit_var_stmt(stmt::Var* stmt) override;
@@ -25,7 +30,12 @@ class Resolver : public stmt::Visitor, public expr::Visitor {
     Value visit_print_stmt(stmt::Print* stmt) override;
     Value visit_if_stmt(stmt::If* stmt) override;
     Value visit_return_stmt(stmt::Return* stmt) override;
+    Value visit_class_stmt(stmt::Class *stmt) override;
+    Value visit_super_expr(expr::Super *expr) override;
 
+    Value visit_get_expr(expr::Get *expr) override;
+    Value visit_set_expr(expr::Set *expr) override;
+    Value visit_this_expr(expr::This *expr) override;
     Value visit_variable_expr(expr::Variable *expr) override;
     Value visit_assign_expr(expr::Assign *expr) override;
     Value visit_literal_expr(expr::Literal *expr) override {
@@ -71,4 +81,6 @@ class Resolver : public stmt::Visitor, public expr::Visitor {
     void define(const Token::ptr &name);
 
     std::vector<std::unordered_map<std::string, bool>> scopes_;
+    bool in_class_ {false};
+    bool class_has_super_ {false};
 };

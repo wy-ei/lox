@@ -40,6 +40,10 @@ class Interpreter : public expr::Visitor, public stmt::Visitor {
     Value visit_assign_expr(expr::Assign *expr) override;
     Value visit_break_expr(expr::Break *expr) override;
     Value visit_call_expr(expr::Call *expr) override;
+    Value visit_get_expr(expr::Get *expr) override;
+    Value visit_set_expr(expr::Set *expr) override;
+    Value visit_this_expr(expr::This *expr) override;
+    Value visit_super_expr(expr::Super *expr) override;
 
     // statements
     Value visit_expression_stmt(stmt::Expression *stmt) override;
@@ -51,6 +55,7 @@ class Interpreter : public expr::Visitor, public stmt::Visitor {
     Value visit_for_stmt(stmt::For *stmt) override;
     Value visit_function_stmt(stmt::Function *stmt) override;
     Value visit_return_stmt(stmt::Return *stmt) override;
+    Value visit_class_stmt(stmt::Class *stmt) override;
 
  private:
     Value evaluate(expr::Expr *expr);

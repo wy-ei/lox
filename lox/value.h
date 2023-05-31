@@ -24,7 +24,7 @@ class Value {
         try {
             return std::any_cast<T>(value_);
         } catch (const std::bad_any_cast &e) {
-            std::cerr << "failed to cast " << typeid(value_).name() << " to " << typeid(T).name() << ": " << e.what();
+            std::cerr << "failed to cast " << typeid(value_).name() << ":" << str() << " to " << typeid(T).name() << ": " << e.what();
             throw e;
         }
     }

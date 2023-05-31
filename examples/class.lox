@@ -1,0 +1,13 @@
+
+class Person {
+    init(name) {
+        this.name_ = name;
+    }
+    name() {
+        return this.name_;
+    }
+}
+
+var john = Person("john");
+assert(john.name() == "john");
+

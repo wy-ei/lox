@@ -95,7 +95,7 @@ expr::Expr::ptr Parser::finish_call(expr::Expr::ptr callee) {
 expr::Expr::ptr Parser::equality() {
     expr::Expr::ptr expr = comparison();
 
-    while (match({Token::Kind::BANG_EQUAL, Token::Kind::EQUAL_EQUAL})) {
+    while (match({Token::BANG_EQUAL, Token::EQUAL_EQUAL})) {
         Token::ptr op = previous();
         expr::Expr::ptr right = comparison();
         expr = std::make_shared<expr::Binary>(expr, op, right);
@@ -107,7 +107,7 @@ expr::Expr::ptr Parser::equality() {
 expr::Expr::ptr Parser::comparison() {
     expr::Expr::ptr expr = term();
 
-    while (match({Token::Kind::GREATER, Token::Kind::GREATER_EQUAL, Token::Kind::LESS, Token::Kind::LESS_EQUAL})) {
+    while (match({Token::GREATER, Token::GREATER_EQUAL, Token::LESS, Token::LESS_EQUAL})) {
         Token::ptr op = previous();
         expr::Expr::ptr right = term();
         expr = std::make_shared<expr::Binary>(expr, op, right);
@@ -119,7 +119,7 @@ expr::Expr::ptr Parser::comparison() {
 expr::Expr::ptr Parser::term() {
     expr::Expr::ptr expr = factor();
 
-    while (match({Token::Kind::MINUS, Token::Kind::PLUS})) {
+    while (match({Token::MINUS, Token::PLUS})) {
         Token::ptr op = previous();
         expr::Expr::ptr right = factor();
         expr = std::make_shared<expr::Binary>(expr, op, right);
@@ -131,7 +131,7 @@ expr::Expr::ptr Parser::term() {
 expr::Expr::ptr Parser::factor() {
     expr::Expr::ptr expr = unary();
 
-    while (match({Token::Kind::SLASH, Token::Kind::STAR})) {
+    while (match({Token::SLASH, Token::STAR})) {
         Token::ptr op = previous();
         expr::Expr::ptr right = unary();
         expr = std::make_shared<expr::Binary>(expr, op, right);
@@ -141,7 +141,7 @@ expr::Expr::ptr Parser::factor() {
 }
 
 expr::Expr::ptr Parser::unary() {
-    if (match({Token::Kind::PLUS, Token::Kind::MINUS})) {
+    if (match({Token::PLUS, Token::MINUS, Token::BANG})) {
         Token::ptr op = previous();
         expr::Expr::ptr right = unary();
         return std::make_shared<expr::Unary>(op, right);
@@ -153,25 +153,25 @@ expr::Expr::ptr Parser::unary() {
 }
 
 expr::Expr::ptr Parser::primary() {
-    if (match(Token::Kind::TRUE)) {
+    if (match(Token::TRUE)) {
         return std::make_shared<expr::Literal>(true);
     }
-    if (match(Token::Kind::FALSE)) {
+    if (match(Token::FALSE)) {
         return std::make_shared<expr::Literal>(false);
     }
-    if (match(Token::Kind::NIL)) {
+    if (match(Token::NIL)) {
         return std::make_shared<expr::Literal>(nullptr);
     }
-    if (match(Token::Kind::STRING)) {
+    if (match(Token::STRING)) {
         return std::make_shared<expr::Literal>(previous()->lexeme);
     }
-    if (match(Token::Kind::NUMBER)) {
+    if (match(Token::NUMBER)) {
         double d = std::stod(previous()->lexeme, nullptr);
         return std::make_shared<expr::Literal>(d);
     }
-    if (match(Token::Kind::LEFT_PAREN)) {
+    if (match(Token::LEFT_PAREN)) {
         expr::Expr::ptr expr = expression();
-        consume(Token::Kind::RIGHT_PAREN, "Expect ')' after expression.");
+        consume(Token::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_shared<expr::Grouping>(expr);
     }
     if (match(Token::THIS)) {
@@ -179,7 +179,7 @@ expr::Expr::ptr Parser::primary() {
     }
     if (match(Token::SUPER)) {
         Token::ptr super = previous();
-        consume(Token::Kind::DOT, "Expect '.'  after 'super'.");
+        consume(Token::DOT, "Expect '.'  after 'super'.");
         Token::ptr method = consume(Token::IDENTIFIER, "Expect superclass method name.");
         return std::make_shared<expr::Super>(super, method);
     }

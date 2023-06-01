@@ -32,6 +32,10 @@ class LoxFunction : public Callable {
 
     bool is_initializer{false};
 
+    std::string str() const {
+        return "function<" + name() + ">";
+    }
+
  private:
     std::shared_ptr<stmt::Function> func_;
     Environment::ptr closure_;

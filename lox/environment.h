@@ -12,8 +12,6 @@
 #include <string>
 #include <unordered_map>
 
-const std::string LOOP_BREAK = "LOOP_BREAK";
-
 class Environment {
  public:
     using ptr = std::shared_ptr<Environment>;
@@ -26,10 +24,6 @@ class Environment {
         values_[name] = value;
     }
 
-    bool local_has(const std::string &name) const {
-        auto it = values_.find(name);
-        return it != values_.end();
-    }
 
     Value get(size_t depth, const std::string &name) {
         Environment *env = this;

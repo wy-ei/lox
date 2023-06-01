@@ -30,8 +30,11 @@ std::string Value::str() const {
     if (is<std::string>()) {
         return as<std::string>();
     }
-    if (is<std::shared_ptr<Callable>>()) {
+    if (is<Callable::ptr>()) {
         return "callable<" + as<std::shared_ptr<Callable>>()->name() + ">";
+    }
+    if (is<LoxFunction::ptr>()) {
+        return as<LoxFunction::ptr>()->str();
     }
     if (is<LoxClass::ptr>()) {
         return as<LoxClass::ptr>()->str();
@@ -122,26 +125,29 @@ Value Value::operator<=(const Value &rhs) const {
 }
 
 Value Value::operator!=(const Value &rhs) const {
-    if (is<double>() && rhs.is<double>()) {
-        return Value{as<double>() != rhs.as<double>()};
+    try {
+        return !(*this == rhs);
+    } catch (...) {
+        throw TypeError(format_type_error_message("!=", type(), rhs.type()));
     }
-    if (is<std::string>() && rhs.is<std::string>()) {
-        return Value{as<std::string>() != rhs.as<std::string>()};
-    }
-    throw TypeError(format_type_error_message("!=", type(), rhs.type()));
 }
 
+#define VALID_VALUE_TYPE(ACTION) \
+    ACTION(nullptr_t)  \
+    ACTION(bool)  \
+    ACTION(double)  \
+    ACTION(std::string)  \
+    ACTION(Callable::ptr)  \
+    ACTION(LoxFunction::ptr)  \
+    ACTION(LoxClass::ptr)  \
+    ACTION(LoxInstance::ptr)
+
 Value Value::operator==(const Value &rhs) const {
-    if (is<double>() && rhs.is<double>()) {
-        return Value{as<double>() == rhs.as<double>()};
-    }
-    if (is<std::string>() && rhs.is<std::string>()) {
-        return Value{as<std::string>() == rhs.as<std::string>()};
-    }
-    if (is<nullptr_t>() && rhs.is<nullptr_t>()) {
-        return true;
-    }
-    throw TypeError(format_type_error_message("==", type(), rhs.type()));
+#define ACTION(type) if (is<type>() && rhs.is<type>()) return as<type>() == rhs.as<type>();
+    VALID_VALUE_TYPE(ACTION)
+#undef ACTION
+
+    return false;
 }
 
 std::string Value::type() const {
@@ -157,5 +163,14 @@ std::string Value::type() const {
     if (is<nullptr_t>()) {
         return "nil";
     }
-    return "unknown";
+    if (is<LoxClass::ptr>()) {
+        return as<LoxClass::ptr>()->str();
+    }
+    if (is<LoxFunction::ptr>()) {
+        return as<LoxFunction>().str();
+    }
+    if (is<LoxInstance::ptr>()) {
+        return as<LoxInstance::ptr>()->str();
+    }
+    return value_.type().name();
 }

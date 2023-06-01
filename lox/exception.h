@@ -21,7 +21,7 @@ class RuntimeError : public std::runtime_error {
 
 class TypeError : public std::exception {
  public:
-    explicit TypeError(const std::string &message) : message_(message) {}
+    explicit TypeError(std::string message) : message_(std::move(message)) {}
     const char *what() const noexcept override {
         return message_.c_str();
     }
@@ -37,4 +37,8 @@ class ReturnException : public std::exception {
     Value value;
 };
 
-class BreakException : public std::exception {};
+class BreakException : public std::exception {
+ public:
+    explicit BreakException(Token::ptr token) : token(std::move(token)) {}
+    Token::ptr token;
+};

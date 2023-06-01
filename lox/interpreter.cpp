@@ -19,9 +19,12 @@
 
 Interpreter::Interpreter() {
     globals_environment_ = std::make_shared<Environment>();
-    globals_environment_->define("now", std::shared_ptr<Callable>(new Now()));
+    globals_environment_->define("clock", std::shared_ptr<Callable>(new Clock()));
     globals_environment_->define("assert", std::shared_ptr<Callable>(new Assert()));
-    globals_environment_->define("str", std::shared_ptr<Callable>(new ToString()));
+    globals_environment_->define("str", std::shared_ptr<Callable>(new Str()));
+    globals_environment_->define("getc", std::shared_ptr<Callable>(new Getc()));
+    globals_environment_->define("chr", std::shared_ptr<Callable>(new Chr()));
+    globals_environment_->define("exit", std::shared_ptr<Callable>(new Exit()));
     environment_ = std::make_shared<Environment>(globals_environment_);
 }
 
@@ -41,7 +44,7 @@ Value Interpreter::visit_unary_expr(expr::Unary *expr) {
     case Token::Kind::BANG:
         return !value;
     default:
-        throw std::runtime_error("Unknown unary operator");
+        throw RuntimeError(expr->op, "Unknown unary operator");
     }
 }
 
@@ -90,7 +93,7 @@ Value Interpreter::visit_assign_expr(expr::Assign *expr) {
 }
 
 Value Interpreter::visit_break_expr(expr::Break *expr) {
-    throw BreakException{};
+    throw BreakException(expr->keyword);
 }
 
 Value Interpreter::visit_call_expr(expr::Call *expr) {
@@ -115,7 +118,7 @@ Value Interpreter::visit_call_expr(expr::Call *expr) {
         std::ostringstream os;
         os << "function " << callable->name() << " require " << callable->arity() << " argument(s) but "
            << arguments.size() << " given.";
-        throw std::runtime_error(os.str());
+        throw RuntimeError(expr->paren, os.str());
     }
 
     return callable->call(this, arguments);
@@ -147,7 +150,7 @@ Value Interpreter::visit_this_expr(expr::This *expr) {
 }
 
 Value Interpreter::visit_super_expr(expr::Super *expr) {
-    auto super = environment_->get("super").as<LoxClass::ptr>();
+    auto super = environment_->get(expr->keyword).as<LoxClass::ptr>();
     auto object = environment_->get("this").as<LoxInstance::ptr>();
 
     LoxFunction::ptr method = super->find_method(expr->method->lexeme);
@@ -322,8 +325,6 @@ void Interpreter::interpret(const std::vector<stmt::Statement::ptr> &statements)
             }
         }
     } catch (const BreakException &e) {
-        std::cerr << "break must in the body of 'for' or 'while'" << std::endl;
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        throw RuntimeError(e.token, "break must in the body of 'for' or 'while'");
     }
 }
